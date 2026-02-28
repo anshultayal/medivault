@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#00d4aa" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MediVault" />
+  <meta name="description" content="Personal medical records and expense tracker" />
+  <link rel="manifest" href="manifest.json" />
+  <title>MediVault – Medical Records & Expenses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #080d1a;
+      --surface: #0f1624;
+      --card: #141d2e;
+      --card2: #1a2438;
+      --accent: #00d4aa;
+      --accent-dim: rgba(0,212,170,0.12);
+      --blue: #4a9eff;
+      --blue-dim: rgba(74,158,255,0.12);
+      --red: #ff5271;
+      --red-dim: rgba(255,82,113,0.12);
+      --orange: #ff9f43;
+      --orange-dim: rgba(255,159,67,0.12);
+      --purple: #b48bff;
+      --purple-dim: rgba(180,139,255,0.12);
+      --yellow: #ffd32a;
+      --yellow-dim: rgba(255,211,42,0.12);
+      --pink: #ff6eb4;
+      --pink-dim: rgba(255,110,180,0.12);
+      --text: #eef0f8;
+      --text-sub: #8892aa;
+      --text-muted: #4a556a;
+      --border: #1a2235;
+      --border2: #232f45;
+      --font: 'Plus Jakarta Sans', sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); overflow: hidden; }
+    #app { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; height: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      padding-top: calc(14px + env(safe-area-inset-top));
+      background: rgba(8,13,26,0.92); backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); flex-shrink: 0; z-index: 50;
+    }
+    .logo-icon {
+      width: 38px; height: 38px; border-radius: 11px;
+      background: var(--accent-dim); border: 1.5px solid rgba(0,212,170,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .logo-text { flex: 1; }
+    .logo-text h1 { font-size: 17px; font-weight: 800; color: var(--text); line-height: 1; }
+    .logo-text span { font-size: 11px; color: var(--accent); letter-spacing: 0.5px; }
+    .member-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--card); padding: 6px 12px; border-radius: 50px;
+      border: 1px solid var(--border2); cursor: pointer; transition: all 0.2s;
+    }
+    .member-chip:active { background: var(--card2); }
+    .member-chip .name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .member-chip .arrow { font-size: 9px; color: var(--text-sub); }
+
+    /* Content */
+    .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .screen { padding: 18px 18px 110px; max-width: 680px; margin: 0 auto; display: none; }
+    .screen.active { display: block; }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      display: flex; background: rgba(15,22,36,0.96); backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border); flex-shrink: 0;
+      padding: 8px 6px; padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      background: none; border: none; cursor: pointer; padding: 6px 4px; border-radius: 12px;
+      font-family: var(--font); transition: all 0.2s;
+    }
+    .nav-btn .nav-icon { font-size: 22px; transition: all 0.2s; filter: grayscale(80%) opacity(0.45); }
+    .nav-btn .nav-label { font-size: 10px; font-weight: 600; color: var(--text-sub); transition: all 0.2s; }
+    .nav-btn .nav-dot { width: 0; height: 3px; border-radius: 2px; background: var(--accent); transition: width 0.3s; }
+    .nav-btn.active .nav-icon { filter: none; transform: scale(1.15) translateY(-1px); }
+    .nav-btn.active .nav-label { color: var(--accent); font-weight: 800; }
+    .nav-btn.active .nav-dot { width: 18px; }
+
+    /* Cards */
+    .card {
+      background: var(--card); border-radius: 16px; border: 1px solid var(--border);
+      transition: all 0.2s;
+    }
+    .card.clickable:active { background: var(--card2); transform: scale(0.99); }
+    .card-p { padding: 18px; }
+
+    /* Avatar */
+    .avatar {
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; flex-shrink: 0; border: 2px solid;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 50px; font-size: 11px; font-weight: 700;
+      border: 1px solid; white-space: nowrap;
+    }
+
+    /* Section title */
+    .section-title {
+      font-size: 11px; font-weight: 800; color: var(--text-sub);
+      letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px;
+    }
+
+    /* Stats row */
+    .stats-row { display: flex; gap: 10px; }
+    .stat-card {
+      flex: 1; background: var(--card); border-radius: 14px; border: 1px solid var(--border);
+      padding: 15px 14px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-sub); font-weight: 600; margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 900; color: var(--text); line-height: 1; }
+    .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .stat-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 18px; float: right;
+    }
+
+    /* Filter chips */
+    .filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 14px; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .chip {
+      padding: 6px 14px; border-radius: 50px; border: 1.5px solid var(--border2);
+      background: transparent; color: var(--text-sub); font-size: 12px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: all 0.2s; font-family: var(--font);
+    }
+    .chip.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); }
+
+    /* Search */
+    .search-box {
+      width: 100%; padding: 11px 16px; border-radius: 12px;
+      background: var(--card); border: 1px solid var(--border2);
+      color: var(--text); font-size: 14px; font-family: var(--font);
+      outline: none; margin-bottom: 14px; transition: border-color 0.2s;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .search-box::placeholder { color: var(--text-muted); }
+
+    /* Input */
+    .form-group { margin-bottom: 15px; }
+    .form-label { font-size: 12px; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; display: block; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 11px 14px; border-radius: 11px;
+      background: var(--bg); border: 1.5px solid var(--border2);
+      color: var(--text); font-size: 14px; font-family: var(--font);
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-select { cursor: pointer; }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-select option { background: var(--surface); }
+
+    /* Buttons */
+    .btn {
+      padding: 11px 22px; border-radius: 11px; border: none;
+      font-weight: 800; font-size: 14px; cursor: pointer; font-family: var(--font);
+      transition: all 0.18s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: #071410; }
+    .btn-primary:active { background: #00b894; transform: scale(0.98); }
+    .btn-outline {
+      background: transparent; color: var(--accent);
+      border: 1.5px solid var(--accent);
+    }
+    .btn-outline:active { background: var(--accent-dim); }
+    .btn-sm { padding: 6px 14px; font-size: 12px; border-radius: 8px; }
+    .btn-danger { background: transparent; color: var(--red); border: 1.5px solid var(--red); }
+    .btn-danger:active { background: var(--red-dim); }
+    .btn-block { width: 100%; justify-content: center; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 200; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border-radius: 22px 22px 16px 16px;
+      border: 1px solid var(--border2); width: 100%; max-width: 480px;
+      max-height: 90vh; overflow: auto; animation: slideUp 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 4px; margin: 12px auto 0; }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+    }
+    .modal-title { font-weight: 800; font-size: 17px; color: var(--text); }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 8px; background: var(--card2);
+      border: none; color: var(--text-sub); font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-body { padding: 18px 20px 24px; }
+
+    /* Record / Expense item */
+    .item-card {
+      background: var(--card); border-radius: 14px; border: 1px solid var(--border);
+      padding: 15px 16px; margin-bottom: 10px; transition: all 0.2s;
+    }
+    .item-card:active { background: var(--card2); }
+    .item-row { display: flex; align-items: center; gap: 12px; }
+    .item-icon {
+      width: 46px; height: 46px; border-radius: 13px;
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .item-title { font-weight: 700; font-size: 15px; color: var(--text); }
+    .item-sub { font-size: 12px; color: var(--text-sub); margin-top: 3px; }
+    .item-amount { font-size: 20px; font-weight: 900; text-align: right; }
+    .item-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+    /* Bar chart */
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .bar-val { font-size: 9px; color: var(--text-sub); font-weight: 600; }
+    .bar { width: 100%; border-radius: 5px; transition: height 0.5s ease; min-height: 3px; }
+    .bar-label { font-size: 10px; color: var(--text-muted); }
+
+    /* Vitals */
+    .vital-card {
+      background: var(--card); border-radius: 16px; border: 1px solid var(--border);
+      padding: 16px 18px; margin-bottom: 12px;
+    }
+    .vital-header { display: flex; align-items: center; gap: 12px; }
+    .vital-history { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .vital-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 10px; background: var(--bg); border-radius: 8px; margin-bottom: 5px;
+    }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 50px 20px; color: var(--text-sub); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; font-weight: 600; }
+    .empty-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Member profile card */
+    .profile-card {
+      background: var(--card); border-radius: 16px; border: 1px solid var(--border);
+      padding: 18px; margin-bottom: 12px; transition: all 0.2s; cursor: pointer;
+    }
+    .profile-card.active-member { border-color: var(--accent); background: rgba(0,212,170,0.04); }
+    .profile-card:active { background: var(--card2); }
+
+    /* Notes box */
+    .notes-box {
+      background: var(--bg); border-radius: 9px; padding: 8px 12px;
+      font-size: 12px; color: var(--text-sub); margin-top: 8px; line-height: 1.5;
+    }
+
+    /* Gradient hero */
+    .hero-card {
+      border-radius: 18px; padding: 20px;
+      background: linear-gradient(135deg, rgba(0,212,170,0.15), rgba(74,158,255,0.08), var(--card));
+      border: 1px solid rgba(0,212,170,0.2); margin-bottom: 18px; position: relative; overflow: hidden;
+    }
+    .hero-card::before {
+      content: ''; position: absolute; top: -30px; right: -30px;
+      width: 120px; height: 120px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,212,170,0.15), transparent);
+      pointer-events: none;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: var(--card2); border: 1px solid var(--border2); border-radius: 50px;
+      padding: 10px 20px; font-size: 13px; font-weight: 700; color: var(--text);
+      z-index: 300; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.2s forwards;
+      white-space: nowrap; box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+    /* Install banner */
+    .install-banner {
+      position: fixed; bottom: 85px; left: 12px; right: 12px; z-index: 150;
+      background: linear-gradient(135deg, #0f2a22, #0f1a2e);
+      border: 1.5px solid rgba(0,212,170,0.4); border-radius: 16px;
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    }
+    .install-banner.hidden { display: none; }
+
+    /* Responsive for tablet */
+    @media (min-width: 600px) {
+      .stats-row { flex-wrap: nowrap; }
+      .screen { padding: 24px 24px 110px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-icon">🏥</div>
+    <div class="logo-text">
+      <h1>MediVault</h1>
+      <span>Medical Records</span>
+    </div>
+    <div class="member-chip" onclick="goScreen('family')">
+      <div class="avatar" id="header-avatar" style="width:26px;height:26px;font-size:11px;"></div>
+      <span class="name" id="header-name">—</span>
+      <span class="arrow">▼</span>
+    </div>
+  </div>
+
+  <!-- Screens -->
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="screen active" id="screen-dashboard">
+      <div class="hero-card" id="hero-card">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" id="hero-avatar" style="width:56px;height:56px;font-size:20px;"></div>
+          <div>
+            <div style="font-weight:900;font-size:19px;color:var(--text)" id="hero-name">—</div>
+            <div style="font-size:13px;color:var(--text-sub)" id="hero-meta">—</div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;" id="hero-badges"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row" id="dash-stats" style="margin-bottom:18px;"></div>
+
+      <div class="section-title" style="margin-top:18px;">Latest Vitals</div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:20px;" id="vitals-strip"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div class="section-title" style="margin-bottom:0;">Recent Records</div>
+        <button class="btn btn-outline btn-sm" onclick="goScreen('records')">View All</button>
+      </div>
+      <div id="dash-records"></div>
+
+      <div class="section-title" style="margin-top:20px;margin-bottom:12px;">Expense Overview</div>
+      <div class="card card-p" id="dash-chart"></div>
+    </div>
+
+    <!-- ── RECORDS ── -->
+    <div class="screen" id="screen-records">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-weight:900;font-size:22px;">Medical Records</div>
+          <div style="font-size:13px;color:var(--text-sub)" id="rec-member-name">—</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-add-record')">+ Add</button>
+      </div>
+      <input class="search-box" placeholder="🔍  Search records..." id="rec-search" oninput="renderRecords()" />
+      <div class="filter-row" id="rec-filter-row"></div>
+      <div id="records-list"></div>
+    </div>
+
+    <!-- ── EXPENSES ── -->
+    <div class="screen" id="screen-expenses">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <div style="font-weight:900;font-size:22px;">Expenses</div>
+          <div style="font-size:13px;color:var(--text-sub)" id="exp-member-name">—</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-add-expense')">+ Add</button>
+      </div>
+
+      <div class="stats-row" style="margin-bottom:18px;" id="exp-stats"></div>
+
+      <!-- Donut + Legend -->
+      <div class="card card-p" style="margin-bottom:18px;" id="exp-breakdown">
+        <div class="section-title">Breakdown by Category</div>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+          <canvas id="donut-canvas" width="110" height="110" style="flex-shrink:0;"></canvas>
+          <div id="exp-legend" style="flex:1;"></div>
+        </div>
+      </div>
+
+      <div class="filter-row" id="exp-filter-row"></div>
+      <div id="expenses-list"></div>
+    </div>
+
+    <!-- ── VITALS ── -->
+    <div class="screen" id="screen-vitals">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div>
+          <div style="font-weight:900;font-size:22px;">Vitals Tracker</div>
+          <div style="font-size:13px;color:var(--text-sub)" id="vit-member-name">—</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-add-vital')">+ Log</button>
+      </div>
+      <div id="vitals-list"></div>
+    </div>
+
+    <!-- ── FAMILY ── -->
+    <div class="screen" id="screen-family">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div style="font-weight:900;font-size:22px;">Family Profiles</div>
+        <button class="btn btn-primary" onclick="openModal('modal-add-member')">+ Add</button>
+      </div>
+      <div id="family-list"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-dashboard" onclick="goScreen('dashboard')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-records" onclick="goScreen('records')">
+      <span class="nav-icon">📁</span>
+      <span class="nav-label">Records</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-expenses" onclick="goScreen('expenses')">
+      <span class="nav-icon">💳</span>
+      <span class="nav-label">Expenses</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-vitals" onclick="goScreen('vitals')">
+      <span class="nav-icon">❤️</span>
+      <span class="nav-label">Vitals</span>
+      <div class="nav-dot"></div>
+    </button>
+    <button class="nav-btn" id="nav-family" onclick="goScreen('family')">
+      <span class="nav-icon">👨‍👩‍👧</span>
+      <span class="nav-label">Family</span>
+      <div class="nav-dot"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ══ MODALS ══════════════════════════════════════════════════════════════════ -->
+
+<!-- Add Record -->
+<div class="modal-overlay" id="modal-add-record">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Add Medical Record</span>
+      <button class="modal-close" onclick="closeModal('modal-add-record')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input class="form-input" id="rec-title" placeholder="e.g. CBC Blood Test" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select class="form-select" id="rec-category"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input class="form-input" type="date" id="rec-date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Doctor / Hospital / Lab</label>
+        <input class="form-input" id="rec-doctor" placeholder="e.g. Dr. Sharma, Apollo Hospital" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tag</label>
+        <input class="form-input" id="rec-tag" placeholder="e.g. CBC, MRI, Prescription" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="rec-notes" placeholder="Additional notes or findings..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-block" onclick="saveRecord()">Save Record</button>
+        <button class="btn btn-outline btn-block" onclick="closeModal('modal-add-record')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Expense -->
+<div class="modal-overlay" id="modal-add-expense">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Add Medical Expense</span>
+      <button class="modal-close" onclick="closeModal('modal-add-expense')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select class="form-select" id="exp-category"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount (₹) *</label>
+        <input class="form-input" type="number" id="exp-amount" placeholder="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input class="form-input" type="date" id="exp-date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Hospital / Clinic / Pharmacy</label>
+        <input class="form-input" id="exp-place" placeholder="e.g. Apollo Hospital, MedPlus" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input class="form-input" id="exp-desc" placeholder="Brief description..." />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Mode</label>
+        <select class="form-select" id="exp-payment">
+          <option>UPI</option><option>Cash</option><option>Card</option>
+          <option>Net Banking</option><option>Insurance</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-block" onclick="saveExpense()">Save Expense</button>
+        <button class="btn btn-outline btn-block" onclick="closeModal('modal-add-expense')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Vital -->
+<div class="modal-overlay" id="modal-add-vital">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Log Vital Sign</span>
+      <button class="modal-close" onclick="closeModal('modal-add-vital')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Type *</label>
+        <select class="form-select" id="vit-type" onchange="updateVitalPlaceholder()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Value *</label>
+        <input class="form-input" id="vit-value" placeholder="e.g. 120/80" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input class="form-input" type="date" id="vit-date" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input class="form-input" id="vit-notes" placeholder="e.g. Fasting, After meal..." />
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-block" onclick="saveVital()">Save Vital</button>
+        <button class="btn btn-outline btn-block" onclick="closeModal('modal-add-vital')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Family Member -->
+<div class="modal-overlay" id="modal-add-member">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <span class="modal-title">Add Family Member</span>
+      <button class="modal-close" onclick="closeModal('modal-add-member')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" id="mem-name" placeholder="Full name" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Relation *</label>
+        <select class="form-select" id="mem-relation">
+          <option>Self</option><option>Spouse</option><option>Son</option>
+          <option>Daughter</option><option>Father</option><option>Mother</option>
+          <option>Brother</option><option>Sister</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date of Birth</label>
+        <input class="form-input" type="date" id="mem-dob" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blood Group</label>
+        <select class="form-select" id="mem-blood">
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          <option>Unknown</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Allergies</label>
+        <input class="form-input" id="mem-allergies" placeholder="e.g. Penicillin, None" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aadhaar / ABHA ID (optional)</label>
+        <input class="form-input" id="mem-abha" placeholder="ABHA Health ID" />
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary btn-block" onclick="saveMember()">Add Member</button>
+        <button class="btn btn-outline btn-block" onclick="closeModal('modal-add-member')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Install Banner -->
+<div class="install-banner hidden" id="install-banner">
+  <div style="font-size:26px;">📲</div>
+  <div style="flex:1;">
+    <div style="font-weight:800;font-size:14px;color:var(--text);">Install MediVault</div>
+    <div style="font-size:12px;color:var(--text-sub);">Add to home screen for offline access</div>
+  </div>
+  <button class="btn btn-primary btn-sm" id="install-btn">Install</button>
+  <button style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size:18px;padding:4px;" onclick="document.getElementById('install-banner').classList.add('hidden')">×</button>
+</div>
+
+<script>
+// ══ DATA ════════════════════════════════════════════════════════════════════
+const RECORD_CATS = [
+  { label:'Lab Report', icon:'🔬', color:'#b48bff' },
+  { label:'Prescription', icon:'📝', color:'#00d4aa' },
+  { label:'Imaging / Scan', icon:'🩻', color:'#ffd32a' },
+  { label:'Vaccination', icon:'💉', color:'#4a9eff' },
+  { label:'Doctor Note', icon:'🩺', color:'#ff9f43' },
+  { label:'Surgery', icon:'🏥', color:'#ff5271' },
+  { label:'Dental', icon:'🦷', color:'#00d4aa' },
+  { label:'Eye / Vision', icon:'👁️', color:'#4a9eff' },
+  { label:'Discharge Summary', icon:'📋', color:'#ff6eb4' },
+  { label:'Other', icon:'📄', color:'#6b7a99' },
+];
+
+const EXPENSE_CATS = [
+  { label:'Consultation', icon:'🩺', color:'#4a9eff' },
+  { label:'Medicines', icon:'💊', color:'#00d4aa' },
+  { label:'Lab Tests', icon:'🔬', color:'#b48bff' },
+  { label:'Surgery / Procedure', icon:'🏥', color:'#ff5271' },
+  { label:'Insurance Premium', icon:'🛡️', color:'#ff9f43' },
+  { label:'Imaging / Scan', icon:'🩻', color:'#ffd32a' },
+  { label:'Physiotherapy', icon:'🧘', color:'#ff6eb4' },
+  { label:'Dental', icon:'🦷', color:'#00d4aa' },
+  { label:'Ambulance', icon:'🚑', color:'#ff5271' },
+  { label:'Other', icon:'📋', color:'#6b7a99' },
+];
+
+const VITAL_TYPES = [
+  { label:'Blood Pressure', unit:'mmHg', icon:'❤️', color:'#ff5271', placeholder:'e.g. 120/80' },
+  { label:'Blood Sugar (Fasting)', unit:'mg/dL', icon:'🩸', color:'#ff9f43', placeholder:'e.g. 90' },
+  { label:'Blood Sugar (PP)', unit:'mg/dL', icon:'🩸', color:'#ff9f43', placeholder:'e.g. 140' },
+  { label:'Weight', unit:'kg', icon:'⚖️', color:'#4a9eff', placeholder:'e.g. 70' },
+  { label:'Height', unit:'cm', icon:'📏', color:'#4a9eff', placeholder:'e.g. 170' },
+  { label:'BMI', unit:'kg/m²', icon:'📊', color:'#b48bff', placeholder:'e.g. 24.2' },
+  { label:'Temperature', unit:'°C', icon:'🌡️', color:'#ffd32a', placeholder:'e.g. 98.6' },
+  { label:'Heart Rate', unit:'bpm', icon:'💓', color:'#ff6eb4', placeholder:'e.g. 72' },
+  { label:'SpO2', unit:'%', icon:'🫁', color:'#b48bff', placeholder:'e.g. 98' },
+  { label:'Haemoglobin', unit:'g/dL', icon:'🔴', color:'#ff5271', placeholder:'e.g. 13.5' },
+  { label:'Cholesterol', unit:'mg/dL', icon:'🫀', color:'#ff9f43', placeholder:'e.g. 180' },
+];
+
+const MEMBER_COLORS = ['#00d4aa','#4a9eff','#b48bff','#ff9f43','#ff6eb4','#ffd32a'];
+
+// Default data
+const DEFAULT_MEMBERS = [
+  { id:'m1', name:'Rahul Sharma', relation:'Self', dob:'1988-06-15', blood:'B+', allergies:'Penicillin', abha:'' },
+  { id:'m2', name:'Priya Sharma', relation:'Spouse', dob:'1991-03-22', blood:'O+', allergies:'None', abha:'' },
+  { id:'m3', name:'Ananya Sharma', relation:'Daughter', dob:'2016-11-08', blood:'O+', allergies:'None', abha:'' },
+];
+const DEFAULT_RECORDS = [
+  { id:'r1', memberId:'m1', title:'Complete Blood Count', category:'Lab Report', date:'2026-02-10', doctor:'Dr. Mehta, SRL Diagnostics', notes:'All values within normal range. Haemoglobin: 14.2', tag:'CBC' },
+  { id:'r2', memberId:'m1', title:'Chest X-Ray PA View', category:'Imaging / Scan', date:'2026-01-20', doctor:'Dr. Kapoor, Apollo Hospital', notes:'No active lung lesions. Normal cardiac size.', tag:'X-Ray' },
+  { id:'r3', memberId:'m2', title:'Thyroid Function Test', category:'Lab Report', date:'2026-02-05', doctor:'Dr. Patel, Thyrocare', notes:'TSH: 5.2 mIU/L - slightly elevated. Follow up in 3 months.', tag:'TFT' },
+  { id:'r4', memberId:'m3', title:'MMR Vaccine - 2nd Dose', category:'Vaccination', date:'2026-01-15', doctor:'Dr. Iyer, Child Care Clinic', notes:'No adverse reaction. Next booster at age 10.', tag:'MMR' },
+  { id:'r5', memberId:'m1', title:'Metformin 500mg', category:'Prescription', date:'2026-02-15', doctor:'Dr. Mehta, City Hospital', notes:'Twice daily after meals. Avoid alcohol.', tag:'Rx' },
+];
+const DEFAULT_EXPENSES = [
+  { id:'e1', memberId:'m1', category:'Consultation', amount:800, date:'2026-02-10', place:'Apollo Hospital', desc:'Dr. Mehta consultation', payment:'UPI' },
+  { id:'e2', memberId:'m1', category:'Lab Tests', amount:1200, date:'2026-02-10', place:'SRL Diagnostics', desc:'CBC + Lipid Panel + HbA1c', payment:'UPI' },
+  { id:'e3', memberId:'m2', category:'Medicines', amount:450, date:'2026-02-08', place:'MedPlus', desc:'Thyroid medication - 30 days', payment:'Cash' },
+  { id:'e4', memberId:'m1', category:'Imaging / Scan', amount:1800, date:'2026-01-20', place:'Apollo Radiology', desc:'Chest X-Ray', payment:'Card' },
+  { id:'e5', memberId:'m3', category:'Consultation', amount:600, date:'2026-01-15', place:'Child Care Clinic', desc:'Pediatrician + Vaccination', payment:'UPI' },
+  { id:'e6', memberId:'m1', category:'Insurance Premium', amount:3500, date:'2026-02-01', place:'Star Health Insurance', desc:'Monthly family floater premium', payment:'Net Banking' },
+  { id:'e7', memberId:'m2', category:'Consultation', amount:1000, date:'2026-01-28', place:'Fortis Hospital', desc:'Endocrinologist consultation', payment:'UPI' },
+  { id:'e8', memberId:'m1', category:'Medicines', amount:380, date:'2026-02-15', place:'Apollo Pharmacy', desc:'Metformin + Vitamins', payment:'UPI' },
+];
+const DEFAULT_VITALS = [
+  { id:'v1', memberId:'m1', type:'Blood Pressure', value:'122/80', date:'2026-02-20', notes:'Morning reading' },
+  { id:'v2', memberId:'m1', type:'Blood Sugar (Fasting)', value:'98', date:'2026-02-20', notes:'Fasting 8 hours' },
+  { id:'v3', memberId:'m1', type:'Weight', value:'76', date:'2026-02-20', notes:'' },
+  { id:'v4', memberId:'m1', type:'Heart Rate', value:'74', date:'2026-02-15', notes:'After rest' },
+  { id:'v5', memberId:'m1', type:'Blood Pressure', value:'128/84', date:'2026-02-10', notes:'Evening' },
+  { id:'v6', memberId:'m1', type:'Blood Sugar (Fasting)', value:'104', date:'2026-02-10', notes:'' },
+  { id:'v7', memberId:'m1', type:'SpO2', value:'98', date:'2026-02-20', notes:'' },
+  { id:'v8', memberId:'m1', type:'Haemoglobin', value:'14.2', date:'2026-02-10', notes:'CBC Report' },
+];
+
+// ══ STATE ═══════════════════════════════════════════════════════════════════
+function load(key, def) {
+  try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : def; } catch { return def; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+let members  = load('mv_members', DEFAULT_MEMBERS);
+let records  = load('mv_records', DEFAULT_RECORDS);
+let expenses = load('mv_expenses', DEFAULT_EXPENSES);
+let vitals   = load('mv_vitals', DEFAULT_VITALS);
+let activeId = load('mv_active', 'm1');
+let recFilterCat = 'All';
+let expFilterCat = 'All';
+
+function persist() {
+  save('mv_members', members);
+  save('mv_records', records);
+  save('mv_expenses', expenses);
+  save('mv_vitals', vitals);
+  save('mv_active', activeId);
+}
+
+// ══ HELPERS ═════════════════════════════════════════════════════════════════
+function uid() { return Math.random().toString(36).slice(2,10); }
+
+function inr(n) {
+  return '₹' + Number(n).toLocaleString('en-IN');
+}
+
+function getActiveMember() { return members.find(m => m.id === activeId) || members[0]; }
+
+function memberColor(id) {
+  const idx = members.findIndex(m => m.id === id);
+  return MEMBER_COLORS[Math.max(0,idx) % MEMBER_COLORS.length];
+}
+
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function makeAvatar(name, color, size=36) {
+  return `<div class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.floor(size*0.35)}px;background:${color}20;border-color:${color}55;color:${color};">${initials(name)}</div>`;
+}
+
+function makeBadge(label, color, icon='') {
+  return `<span class="badge" style="background:${color}18;border-color:${color}44;color:${color};">${icon?icon+' ':''}${label}</span>`;
+}
+
+function catInfo(cats, label) { return cats.find(c=>c.label===label) || cats[cats.length-1]; }
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+// ══ NAVIGATION ══════════════════════════════════════════════════════════════
+let currentScreen = 'dashboard';
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  document.querySelector('.content').scrollTop = 0;
+  currentScreen = id;
+  renderScreen(id);
+}
+
+function renderScreen(id) {
+  if (id==='dashboard') renderDashboard();
+  if (id==='records')   renderRecords();
+  if (id==='expenses')  renderExpenses();
+  if (id==='vitals')    renderVitals();
+  if (id==='family')    renderFamily();
+}
+
+// ══ MODALS ═══════════════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  setDefaultDates();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+});
+
+function setDefaultDates() {
+  const today = new Date().toISOString().split('T')[0];
+  ['rec-date','exp-date','vit-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.value) el.value = today;
+  });
+}
+
+// Populate selects
+function populateSelects() {
+  const recCat = document.getElementById('rec-category');
+  RECORD_CATS.forEach(c => { const o=document.createElement('option'); o.value=c.label; o.textContent=c.icon+' '+c.label; recCat.appendChild(o); });
+
+  const expCat = document.getElementById('exp-category');
+  EXPENSE_CATS.forEach(c => { const o=document.createElement('option'); o.value=c.label; o.textContent=c.icon+' '+c.label; expCat.appendChild(o); });
+
+  const vitType = document.getElementById('vit-type');
+  VITAL_TYPES.forEach(v => { const o=document.createElement('option'); o.value=v.label; o.textContent=v.icon+' '+v.label; vitType.appendChild(o); });
+
+  // Filter chips
+  buildFilterChips('rec-filter-row', RECORD_CATS, 'rec');
+  buildFilterChips('exp-filter-row', EXPENSE_CATS, 'exp');
+}
+
+function buildFilterChips(containerId, cats, prefix) {
+  const row = document.getElementById(containerId);
+  const allChip = document.createElement('button');
+  allChip.className = 'chip active'; allChip.textContent = 'All';
+  allChip.onclick = () => { setFilter(prefix,'All'); row.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); allChip.classList.add('active'); };
+  row.appendChild(allChip);
+  cats.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'chip'; btn.textContent = c.icon+' '+c.label;
+    btn.style.setProperty('--chip-color', c.color);
+    btn.onclick = () => {
+      setFilter(prefix, c.label);
+      row.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      btn.style.borderColor = c.color; btn.style.color = c.color; btn.style.background = c.color+'20';
+    };
+    row.appendChild(btn);
+  });
+}
+
+function setFilter(prefix, val) {
+  if (prefix==='rec') { recFilterCat=val; renderRecords(); }
+  if (prefix==='exp') { expFilterCat=val; renderExpenses(); }
+}
+
+function updateVitalPlaceholder() {
+  const t = document.getElementById('vit-type').value;
+  const vt = VITAL_TYPES.find(v=>v.label===t);
+  if (vt) document.getElementById('vit-value').placeholder = vt.placeholder;
+}
+
+// ══ SAVE FUNCTIONS ═══════════════════════════════════════════════════════════
+function saveRecord() {
+  const title = document.getElementById('rec-title').value.trim();
+  const date  = document.getElementById('rec-date').value;
+  if (!title || !date) { showToast('⚠️ Title and Date are required'); return; }
+  const rec = {
+    id: uid(), memberId: activeId,
+    title, category: document.getElementById('rec-category').value,
+    date, doctor: document.getElementById('rec-doctor').value.trim(),
+    tag: document.getElementById('rec-tag').value.trim(),
+    notes: document.getElementById('rec-notes').value.trim(),
+  };
+  records.unshift(rec); persist();
+  closeModal('modal-add-record');
+  ['rec-title','rec-doctor','rec-tag','rec-notes'].forEach(id => document.getElementById(id).value='');
+  showToast('✅ Record saved!');
+  renderScreen(currentScreen);
+}
+
+function saveExpense() {
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const date   = document.getElementById('exp-date').value;
+  if (!amount || !date) { showToast('⚠️ Amount and Date are required'); return; }
+  const exp = {
+    id: uid(), memberId: activeId,
+    category: document.getElementById('exp-category').value,
+    amount, date,
+    place: document.getElementById('exp-place').value.trim(),
+    desc: document.getElementById('exp-desc').value.trim(),
+    payment: document.getElementById('exp-payment').value,
+  };
+  expenses.unshift(exp); persist();
+  closeModal('modal-add-expense');
+  ['exp-amount','exp-place','exp-desc'].forEach(id => document.getElementById(id).value='');
+  showToast('✅ Expense saved!');
+  renderScreen(currentScreen);
+}
+
+function saveVital() {
+  const value = document.getElementById('vit-value').value.trim();
+  const date  = document.getElementById('vit-date').value;
+  if (!value || !date) { showToast('⚠️ Value and Date are required'); return; }
+  const vit = {
+    id: uid(), memberId: activeId,
+    type: document.getElementById('vit-type').value,
+    value, date,
+    notes: document.getElementById('vit-notes').value.trim(),
+  };
+  vitals.unshift(vit); persist();
+  closeModal('modal-add-vital');
+  ['vit-value','vit-notes'].forEach(id => document.getElementById(id).value='');
+  showToast('✅ Vital logged!');
+  renderScreen(currentScreen);
+}
+
+function saveMember() {
+  const name = document.getElementById('mem-name').value.trim();
+  if (!name) { showToast('⚠️ Name is required'); return; }
+  const mem = {
+    id: uid(), name,
+    relation: document.getElementById('mem-relation').value,
+    dob: document.getElementById('mem-dob').value,
+    blood: document.getElementById('mem-blood').value,
+    allergies: document.getElementById('mem-allergies').value.trim(),
+    abha: document.getElementById('mem-abha').value.trim(),
+  };
+  members.push(mem); persist();
+  closeModal('modal-add-member');
+  ['mem-name','mem-dob','mem-allergies','mem-abha'].forEach(id => document.getElementById(id).value='');
+  showToast('✅ Member added!');
+  renderFamily();
+}
+
+function deleteRecord(id) { records = records.filter(r=>r.id!==id); persist(); showToast('🗑️ Deleted'); renderScreen(currentScreen); }
+function deleteExpense(id) { expenses = expenses.filter(e=>e.id!==id); persist(); showToast('🗑️ Deleted'); renderScreen(currentScreen); }
+function deleteVital(id) { vitals = vitals.filter(v=>v.id!==id); persist(); showToast('🗑️ Deleted'); renderVitals(); }
+function setActiveMember(id) { activeId=id; save('mv_active',id); updateHeader(); renderScreen(currentScreen); showToast('👤 Switched to '+members.find(m=>m.id===id)?.name); }
+
+// ══ HEADER ═══════════════════════════════════════════════════════════════════
+function updateHeader() {
+  const mem = getActiveMember();
+  const color = memberColor(activeId);
+  document.getElementById('header-avatar').style.cssText =
+    `width:26px;height:26px;font-size:11px;background:${color}20;border-color:${color}55;color:${color};`;
+  document.getElementById('header-avatar').textContent = initials(mem.name);
+  document.getElementById('header-name').textContent = mem.name.split(' ')[0];
+}
+
+// ══ DASHBOARD ════════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const mem = getActiveMember();
+  const color = memberColor(activeId);
+  const memRec = records.filter(r=>r.memberId===activeId);
+  const memExp = expenses.filter(e=>e.memberId===activeId);
+  const memVit = vitals.filter(v=>v.memberId===activeId);
+
+  // Hero
+  document.getElementById('hero-avatar').style.cssText =
+    `width:56px;height:56px;font-size:20px;background:${color}20;border-color:${color}55;color:${color};`;
+  document.getElementById('hero-avatar').textContent = initials(mem.name);
+  document.getElementById('hero-name').textContent = mem.name;
+  document.getElementById('hero-meta').textContent = `${mem.relation} · DOB: ${formatDate(mem.dob)}`;
+  document.getElementById('hero-badges').innerHTML =
+    makeBadge('Blood: '+mem.blood, '#ff5271', '🩸') + ' ' +
+    (mem.allergies && mem.allergies!=='None' ? makeBadge(mem.allergies, '#ff9f43', '⚠️') : '') +
+    (mem.abha ? ' ' + makeBadge('ABHA: '+mem.abha, '#4a9eff', '🆔') : '');
+
+  // Stats
+  const total = memExp.reduce((s,e)=>s+e.amount,0);
+  const monthTotal = memExp.filter(e=>e.date.startsWith(thisMonth())).reduce((s,e)=>s+e.amount,0);
+  document.getElementById('dash-stats').innerHTML = `
+    <div class="stat-card">
+      <div style="overflow:hidden">
+        <div class="stat-icon" style="background:#b48bff18;">📁</div>
+        <div class="stat-label">Records</div>
+        <div class="stat-value">${memRec.length}</div>
+        <div class="stat-sub">documents</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div style="overflow:hidden">
+        <div class="stat-icon" style="background:#00d4aa18;">📅</div>
+        <div class="stat-label">This Month</div>
+        <div class="stat-value" style="font-size:17px;">${inr(monthTotal)}</div>
+        <div class="stat-sub">expenses</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div style="overflow:hidden">
+        <div class="stat-icon" style="background:#ff9f4318;">💰</div>
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value" style="font-size:17px;">${inr(total)}</div>
+        <div class="stat-sub">all time</div>
+      </div>
+    </div>`;
+
+  // Vitals strip
+  const latestVitals = {};
+  memVit.forEach(v => { if(!latestVitals[v.type]) latestVitals[v.type] = v; });
+  const vitHtml = VITAL_TYPES.slice(0,5).map(vt => {
+    const v = latestVitals[vt.label];
+    return `<div class="card" style="padding:14px;min-width:100px;text-align:center;flex-shrink:0;">
+      <div style="font-size:22px;margin-bottom:6px;">${vt.icon}</div>
+      <div style="font-size:15px;font-weight:900;color:${vt.color};">${v?v.value:'—'}</div>
+      <div style="font-size:9px;color:var(--text-muted);margin-top:2px;">${vt.unit}</div>
+      <div style="font-size:9px;color:var(--text-sub);margin-top:1px;">${vt.label.split(' ')[0]}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('vitals-strip').innerHTML = vitHtml;
+
+  // Recent records
+  const recHtml = memRec.slice(0,3).map(r => {
+    const cat = catInfo(RECORD_CATS, r.category);
+    return `<div class="item-card">
+      <div class="item-row">
+        <div class="item-icon" style="background:${cat.color}18;">${cat.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="item-title">${r.title}</div>
+          <div class="item-sub">${r.doctor?'👨‍⚕️ '+r.doctor+' · ':''}📅 ${formatDate(r.date)}</div>
+        </div>
+        ${makeBadge(r.category, cat.color)}
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No records yet</div></div>';
+  document.getElementById('dash-records').innerHTML = recHtml;
+
+  // Chart - last 6 months
+  const months = [];
+  for (let i=5;i>=0;i--) {
+    const d = new Date(); d.setMonth(d.getMonth()-i);
+    const key = d.toISOString().slice(0,7);
+    const label = d.toLocaleString('en-IN',{month:'short'});
+    const val = memExp.filter(e=>e.date.startsWith(key)).reduce((s,e)=>s+e.amount,0);
+    months.push({label,val});
+  }
+  const max = Math.max(...months.map(m=>m.val),1);
+  const chartHtml = `
+    <div class="section-title">Last 6 Months Spending</div>
+    <div class="bar-chart">
+      ${months.map(m=>`<div class="bar-col">
+        <div class="bar-val">${m.val>0?'₹'+(m.val>=1000?(m.val/1000).toFixed(1)+'k':m.val):''}</div>
+        <div class="bar" style="height:${(m.val/max)*58}px;background:${m.val>0?'var(--accent)':'var(--border2)'}88;"></div>
+        <div class="bar-label">${m.label}</div>
+      </div>`).join('')}
+    </div>`;
+  document.getElementById('dash-chart').innerHTML = chartHtml;
+}
+
+// ══ RECORDS ══════════════════════════════════════════════════════════════════
+function renderRecords() {
+  const mem = getActiveMember();
+  document.getElementById('rec-member-name').textContent = mem.name;
+  const search = (document.getElementById('rec-search')?.value||'').toLowerCase();
+  const memRec = records.filter(r => r.memberId===activeId);
+  const filtered = memRec.filter(r =>
+    (recFilterCat==='All' || r.category===recFilterCat) &&
+    (r.title.toLowerCase().includes(search) || (r.doctor||'').toLowerCase().includes(search) || (r.tag||'').toLowerCase().includes(search))
+  );
+
+  if (!filtered.length) {
+    document.getElementById('records-list').innerHTML = `<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">No records found</div><div class="empty-sub">Add your first medical record</div></div>`;
+    return;
+  }
+
+  document.getElementById('records-list').innerHTML = filtered.map(r => {
+    const cat = catInfo(RECORD_CATS, r.category);
+    return `<div class="item-card">
+      <div class="item-row">
+        <div class="item-icon" style="background:${cat.color}18;">${cat.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+            <div class="item-title">${r.title}</div>
+            ${makeBadge(r.category, cat.color)}
+          </div>
+          <div class="item-sub">${r.doctor?'👨‍⚕️ '+r.doctor+' · ':''}📅 ${formatDate(r.date)}</div>
+          ${r.notes?`<div class="notes-box">📌 ${r.notes}</div>`:''}
+          ${r.tag?`<div style="margin-top:6px;">${makeBadge(r.tag,'#6b7a99')}</div>`:''}
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="btn btn-outline btn-sm">📄 View</button>
+        <button class="btn btn-outline btn-sm">📤 Share</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('${r.id}')">🗑️ Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ EXPENSES ═════════════════════════════════════════════════════════════════
+function renderExpenses() {
+  const mem = getActiveMember();
+  document.getElementById('exp-member-name').textContent = mem.name;
+  const memExp = expenses.filter(e=>e.memberId===activeId);
+  const filtered = memExp.filter(e=>expFilterCat==='All'||e.category===expFilterCat);
+
+  // Stats
+  const total = memExp.reduce((s,e)=>s+e.amount,0);
+  const monthTotal = memExp.filter(e=>e.date.startsWith(thisMonth())).reduce((s,e)=>s+e.amount,0);
+  document.getElementById('exp-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#00d4aa18;">📅</div>
+      <div class="stat-label">This Month</div>
+      <div class="stat-value" style="font-size:18px;">${inr(monthTotal)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#ff9f4318;">💳</div>
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value" style="font-size:18px;">${inr(total)}</div>
+    </div>`;
+
+  // Donut
+  const byCat = EXPENSE_CATS.map(cat => ({
+    ...cat, value: memExp.filter(e=>e.category===cat.label).reduce((s,e)=>s+e.amount,0)
+  })).filter(c=>c.value>0);
+
+  if (byCat.length > 0) {
+    drawDonut(byCat, total);
+    document.getElementById('exp-legend').innerHTML = byCat.map(c=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+        <div style="width:10px;height:10px;border-radius:3px;background:${c.color};flex-shrink:0;"></div>
+        <div style="flex:1;font-size:13px;color:var(--text-sub);">${c.icon} ${c.label}</div>
+        <div style="font-weight:800;font-size:13px;color:var(--text);">${inr(c.value)}</div>
+      </div>`).join('');
+    document.getElementById('exp-breakdown').style.display = '';
+  } else {
+    document.getElementById('exp-breakdown').style.display = 'none';
+  }
+
+  // List
+  if (!filtered.length) {
+    document.getElementById('expenses-list').innerHTML = `<div class="empty"><div class="empty-icon">💸</div><div class="empty-text">No expenses found</div><div class="empty-sub">Start tracking your medical expenses</div></div>`;
+    return;
+  }
+  document.getElementById('expenses-list').innerHTML = filtered.map(e => {
+    const cat = catInfo(EXPENSE_CATS, e.category);
+    return `<div class="item-card">
+      <div class="item-row">
+        <div class="item-icon" style="background:${cat.color}18;">${cat.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="item-title">${e.desc||e.category}</div>
+          <div class="item-sub">${e.place?'🏥 '+e.place+' · ':''}📅 ${formatDate(e.date)} · 💳 ${e.payment||'—'}</div>
+          <div style="margin-top:5px;">${makeBadge(e.category,cat.color)}</div>
+        </div>
+        <div>
+          <div class="item-amount" style="color:var(--text);">${inr(e.amount)}</div>
+          <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="deleteExpense('${e.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function drawDonut(byCat, total) {
+  const canvas = document.getElementById('donut-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,110,110);
+  let start = -Math.PI/2;
+  byCat.forEach(c => {
+    const slice = (c.value/total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(55,55);
+    ctx.arc(55,55,45,start,start+slice);
+    ctx.closePath();
+    ctx.fillStyle = c.color+'cc';
+    ctx.fill();
+    start += slice;
+  });
+  // Center hole
+  ctx.beginPath();
+  ctx.arc(55,55,26,0,2*Math.PI);
+  ctx.fillStyle = '#141d2e';
+  ctx.fill();
+  // Center text
+  ctx.fillStyle = '#eef0f8';
+  ctx.font = 'bold 10px Plus Jakarta Sans, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(inr(total).replace('₹','₹'), 55, 53);
+  ctx.font = '8px Plus Jakarta Sans, sans-serif';
+  ctx.fillStyle = '#8892aa';
+  ctx.fillText('total', 55, 65);
+}
+
+// ══ VITALS ═══════════════════════════════════════════════════════════════════
+function renderVitals() {
+  const mem = getActiveMember();
+  document.getElementById('vit-member-name').textContent = mem.name;
+  const memVit = vitals.filter(v=>v.memberId===activeId);
+
+  const byType = {};
+  memVit.forEach(v => { if(!byType[v.type]) byType[v.type]=[]; byType[v.type].push(v); });
+
+  document.getElementById('vitals-list').innerHTML = VITAL_TYPES.map(vt => {
+    const entries = byType[vt.label]||[];
+    const latest = entries[0];
+    return `<div class="vital-card">
+      <div class="vital-header">
+        <div class="item-icon" style="background:${vt.color}18;">${vt.icon}</div>
+        <div style="flex:1;">
+          <div style="font-weight:800;font-size:15px;color:var(--text);">${vt.label}</div>
+          <div style="font-size:11px;color:var(--text-muted);">Unit: ${vt.unit}</div>
+        </div>
+        ${latest
+          ? `<div style="text-align:right;">
+              <div style="font-size:22px;font-weight:900;color:${vt.color};">${latest.value}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${formatDate(latest.date)}</div>
+             </div>`
+          : `<div style="color:var(--text-muted);font-size:13px;">No data</div>`}
+      </div>
+      ${entries.length>1 ? `<div class="vital-history">
+        <div style="font-size:11px;font-weight:700;color:var(--text-sub);margin-bottom:7px;text-transform:uppercase;letter-spacing:1px;">History</div>
+        ${entries.slice(0,5).map(e=>`<div class="vital-row">
+          <span style="font-size:13px;color:var(--text-sub);">${formatDate(e.date)}</span>
+          ${e.notes?`<span style="font-size:11px;color:var(--text-muted);">${e.notes}</span>`:''}
+          <span style="font-size:13px;font-weight:800;color:${vt.color};">${e.value} <span style="color:var(--text-muted);font-weight:400;">${vt.unit}</span></span>
+          <button onclick="deleteVital('${e.id}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:2px;">🗑️</button>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ══ FAMILY ═══════════════════════════════════════════════════════════════════
+function renderFamily() {
+  document.getElementById('family-list').innerHTML = members.map((m,i) => {
+    const color = MEMBER_COLORS[i % MEMBER_COLORS.length];
+    const isActive = m.id===activeId;
+    const memRec = records.filter(r=>r.memberId===m.id).length;
+    const memExp = expenses.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0);
+    return `<div class="profile-card${isActive?' active-member':''}" onclick="setActiveMember('${m.id}')">
+      <div style="display:flex;align-items:center;gap:14px;">
+        ${makeAvatar(m.name,color,52)}
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="font-weight:800;font-size:16px;color:var(--text);">${m.name}</div>
+            ${isActive?makeBadge('Active',color,'✓'):''}
+          </div>
+          <div style="font-size:13px;color:var(--text-sub);margin-top:2px;">${m.relation}${m.dob?' · Born '+formatDate(m.dob):''}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            ${makeBadge('Blood: '+m.blood,'#ff5271','🩸')}
+            ${m.allergies&&m.allergies!=='None'?makeBadge(m.allergies,'#ff9f43','⚠️'):''}
+            ${m.abha?makeBadge('ABHA','#4a9eff','🆔'):''}
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+        <div><div style="font-size:18px;font-weight:900;color:var(--text);">${memRec}</div><div style="font-size:11px;color:var(--text-sub);">Records</div></div>
+        <div><div style="font-size:18px;font-weight:900;color:var(--text);">${inr(memExp)}</div><div style="font-size:11px;color:var(--text-sub);">Total Spent</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ PWA / SERVICE WORKER ════════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => console.log('SW registered')).catch(console.error);
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.remove('hidden');
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden');
+  deferredPrompt = null;
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.add('hidden');
+  showToast('🎉 MediVault installed!');
+});
+
+// ══ INIT ════════════════════════════════════════════════════════════════════
+populateSelects();
+updateHeader();
+renderDashboard();
+</script>
+</body>
+</html>
